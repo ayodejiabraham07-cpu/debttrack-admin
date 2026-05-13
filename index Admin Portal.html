@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DebtTrack — Super Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  :root{--bg:#f5f7f5;--surface:#fff;--surface2:#f0f4f0;--border:#e0e8e0;--border2:#d0dcd0;--text:#1a2e1a;--text2:#5a7a5a;--text3:#9ab09a;--accent:#2d7a3a;--accent-light:#e8f5ea;--red:#c0392b;--red-dim:rgba(192,57,43,0.08);--amber:#d4870a;--amber-dim:rgba(212,135,10,0.08);--blue:#2471a3;--blue-dim:rgba(36,113,163,0.08);--green:#2d7a3a;--green-dim:rgba(45,122,58,0.08);--radius:10px;--radius-sm:6px;--shadow:0 1px 3px rgba(0,0,0,0.08)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+  .field-error{font-size:11px;color:var(--red);margin-top:3px;display:none}
+  .field-error.show{display:block}
+  .input-error{border-color:var(--red)!important}
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* LOGIN */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#e8f5ea,#f5f7f5)}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(45,122,58,0.1)}
+  .login-logo{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:2px}
+  .login-badge{display:inline-block;font-size:10px;font-weight:600;background:var(--accent);color:#fff;padding:2px 8px;border-radius:20px;margin-bottom:20px;letter-spacing:0.5px;text-transform:uppercase}
+  .login-tagline{font-size:13px;color:var(--text2);margin-bottom:24px}
+  .form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+  .form-input{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:14px;margin-bottom:14px;outline:none;transition:border-color 0.2s}
+  .form-input:focus{border-color:var(--accent)}
+  .btn-login{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn-login:hover{background:#236130}
+
+  /* APP */
+  #app{display:none;flex-direction:column;min-height:100vh}
+  .topbar{background:var(--accent);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(45,122,58,0.2)}
+  .topbar-left{display:flex;align-items:center;gap:10px}
+  .topbar-logo{font-size:16px;font-weight:700;color:#fff}
+  .topbar-badge{font-size:10px;font-weight:600;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase}
+  .topbar-right{display:flex;align-items:center;gap:14px}
+  .topbar-right span{font-size:13px;color:rgba(255,255,255,0.8)}
+  .logout-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit}
+  .logout-btn:hover{background:rgba(255,255,255,0.25)}
+  .nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;overflow-x:auto;box-shadow:var(--shadow)}
+  .nav::-webkit-scrollbar{display:none}
+  .nav-btn{padding:13px 14px;background:none;border:none;color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;font-weight:500}
+  .nav-btn:hover{color:var(--accent)}
+  .nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .main{padding:20px;flex:1;max-width:1200px;margin:0 auto;width:100%}
+  .section{display:none}
+  .section.active{display:block}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:500}
+  .stat-value{font-size:22px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace}
+  .stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
+  .card-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+  .card-title{font-size:13px;font-weight:600;color:var(--text)}
+  .card-body{padding:18px}
+
+  /* TABLE */
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 16px;color:var(--text2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+  td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--accent-light)}
+
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-active{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,122,58,0.2)}
+  .badge-inactive{background:var(--red-dim);color:var(--red);border:1px solid rgba(192,57,43,0.2)}
+  .badge-trial{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(212,135,10,0.2)}
+  .badge-pending{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(212,135,10,0.2)}
+  .badge-paid{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,122,58,0.2)}
+  .badge-overdue{background:var(--red-dim);color:var(--red);border:1px solid rgba(192,57,43,0.2)}
+
+  /* BUTTONS */
+  .btn{padding:7px 14px;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all 0.2s;font-weight:500}
+  .btn-primary{background:var(--accent);color:#fff;border:none}
+  .btn-primary:hover{background:#236130}
+  .btn-ghost{background:none;color:var(--text2);border:1px solid var(--border2)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-export{background:var(--accent-light);color:var(--accent);border:1px solid var(--border)}
+  .btn-export:hover{background:var(--accent);color:#fff}
+  .btn-danger{background:none;color:var(--red);border:1px solid rgba(192,57,43,0.3)}
+  .btn-danger:hover{background:var(--red-dim)}
+  .icon-btn{background:none;border:1px solid var(--border2);color:var(--text2);cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;transition:all 0.2s;font-family:inherit;margin-right:4px}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
+
+  /* FORMS */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-group label{font-size:12px;color:var(--text2);font-weight:500}
+  .form-group input,.form-group select,.form-group textarea{padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color 0.2s}
+  .form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+  .form-actions{display:flex;gap:10px;margin-top:4px}
+
+  /* ALERTS */
+  .alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:16px;display:none;font-weight:500}
+  .alert-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,122,58,0.2)}
+  .alert-error{background:var(--red-dim);color:var(--red);border:1px solid rgba(192,57,43,0.2)}
+
+  /* SEARCH */
+  .search-bar{padding:7px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:13px;outline:none;width:200px;transition:border-color 0.2s}
+  .search-bar:focus{border-color:var(--accent)}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+  .modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+  .modal-title{font-size:14px;font-weight:600}
+  .modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px}
+  .modal-body{padding:20px}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+  /* DIALOG */
+  .dialog-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;padding:20px}
+  .dialog-overlay.open{display:flex}
+  .dialog-box{background:var(--surface);border-radius:var(--radius);padding:28px;width:100%;max-width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+  .dialog-icon{font-size:32px;margin-bottom:10px;color:var(--green)}
+  .dialog-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .dialog-msg{font-size:13px;color:var(--text2);margin-bottom:20px}
+  .dialog-ok{padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer}
+
+  /* PLAN BADGE */
+  .plan-basic{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(36,113,163,0.2);display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .plan-pro{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,122,58,0.2);display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .plan-enterprise{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(212,135,10,0.2);display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+
+  .hrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .config-note{background:var(--accent-light);border:1px solid rgba(45,122,58,0.2);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--accent);margin-bottom:16px;font-weight:500}
+  .webhook-url{font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text)}
+  @media(max-width:600px){.form-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.search-bar{width:140px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">DebtTrack</div>
+    <div class="login-badge">Super Admin</div>
+    <p class="login-tagline">Bytetek Limited — Admin Portal</p>
+    <label class="form-label">Username</label>
+    <input type="text" class="form-input" id="login-user" placeholder="superadmin" />
+    <label class="form-label">Password</label>
+    <input type="password" class="form-input" id="login-pass" placeholder="Enter password" />
+    <div class="alert alert-error" id="login-error">Invalid username or password</div>
+    <button class="btn-login" onclick="doLogin()" id="login-btn">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">DebtTrack</span>
+      <span class="topbar-badge">Super Admin</span>
+    </div>
+    <div class="topbar-right">
+      <span>Bytetek Limited</span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('overview',this)">Overview</button>
+    <button class="nav-btn" onclick="showSection('businesses',this)">Businesses</button>
+    <button class="nav-btn" onclick="showSection('onboard',this)">Onboard Business</button>
+    <button class="nav-btn" onclick="showSection('all-debts',this)">All Debts</button>
+    <button class="nav-btn" onclick="showSection('subscriptions',this)">Subscriptions</button>
+    <button class="nav-btn" onclick="showSection('settings',this)">Settings</button>
+  </nav>
+
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div id="overview" class="section active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Businesses</div>
+          <div class="stat-value" id="stat-biz">0</div>
+          <div class="stat-sub" id="stat-biz-sub">0 active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Debt Volume</div>
+          <div class="stat-value" style="color:var(--red)" id="stat-volume">N0</div>
+          <div class="stat-sub">across all businesses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Debtors</div>
+          <div class="stat-value" id="stat-debtors">0</div>
+          <div class="stat-sub">unique customers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Reminders Sent</div>
+          <div class="stat-value" style="color:var(--green)" id="stat-reminders">0</div>
+          <div class="stat-sub">this month</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Registered Businesses</span>
+          <div class="hrow">
+            <button class="btn btn-export" onclick="exportTable('overview-biz-table','businesses')">Export CSV</button>
+            <button class="btn btn-primary" onclick="showSection('onboard',document.querySelectorAll('.nav-btn')[2])">Onboard New</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Business Name</th><th>Owner</th><th>Phone</th><th>Plan</th><th>Status</th><th>Debtors</th><th>Total Debt</th><th>Joined</th><th>Actions</th></tr></thead>
+            <tbody id="overview-biz-table"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No businesses yet. Onboard your first client.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent activity</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Business</th><th>Action</th><th>Details</th><th>Date</th></tr></thead>
+            <tbody id="activity-table"><tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">No activity yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUSINESSES -->
+    <div id="businesses" class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Businesses</span>
+          <div class="hrow">
+            <input type="text" class="search-bar" placeholder="Search business..." oninput="filterBiz(this.value)" />
+            <button class="btn btn-export" onclick="exportTable('biz-table','businesses')">Export CSV</button>
+            <button class="btn btn-primary" onclick="showSection('onboard',document.querySelectorAll('.nav-btn')[2])">Onboard New</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Business Name</th><th>Owner</th><th>Phone</th><th>Email</th><th>Plan</th><th>Status</th><th>Dashboard URL</th><th>Actions</th></tr></thead>
+            <tbody id="biz-table"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No businesses registered yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONBOARD -->
+    <div id="onboard" class="section">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Onboard New Business</span></div>
+        <div class="card-body">
+          <div class="alert alert-success" id="onboard-success">Business onboarded successfully.</div>
+          <div class="alert alert-error" id="onboard-error">Please fill all required fields.</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Business Name *</label><input type="text" id="ob-name" placeholder="Business name" /><span class="field-error"></span></div>
+            <div class="form-group"><label>Owner Full Name *</label><input type="text" id="ob-owner" placeholder="Owner name" /><span class="field-error"></span></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Phone Number *</label><input type="text" id="ob-phone" placeholder="+2348012345678" /><span class="field-error"></span></div>
+            <div class="form-group"><label>Email Address *</label><input type="email" id="ob-email" placeholder="owner@business.com" /><span class="field-error"></span></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Business Category</label><select id="ob-category"><option>Retail</option><option>Wholesale</option><option>Services</option><option>Food & Beverage</option><option>Real Estate</option><option>Other</option></select></div>
+            <div class="form-group"><label>Subscription Plan</label><select id="ob-plan"><option value="Basic">Basic</option><option value="Pro">Pro</option><option value="Enterprise">Enterprise</option></select></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Login Username *</label><input type="text" id="ob-username" placeholder="businessowner" /><span class="field-error"></span></div>
+            <div class="form-group"><label>Login Password *</label><input type="password" id="ob-password" placeholder="Min 8 characters" /><span class="field-error"></span></div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px"><label>Dashboard URL (optional)</label><input type="text" id="ob-url" placeholder="https://business.debttrack.com" /></div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="onboardBusiness()" id="ob-btn">Onboard Business</button>
+            <button class="btn btn-ghost" onclick="clearOnboard()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL DEBTS -->
+    <div id="all-debts" class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Debt Records (All Businesses)</span>
+          <div class="hrow">
+            <select style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit" onchange="filterAllDebts('biz',this.value)" id="biz-filter">
+              <option value="">All Businesses</option>
+            </select>
+            <select style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit" onchange="filterAllDebts('status',this.value)">
+              <option value="">All Statuses</option><option>Pending</option><option>Overdue</option><option>Partial</option><option>Paid</option>
+            </select>
+            <button class="btn btn-export" onclick="exportTable('all-debts-table','all-debts')">Export CSV</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Business</th><th>Customer</th><th>Phone</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Notes</th></tr></thead>
+            <tbody id="all-debts-table"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No debt records yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div id="subscriptions" class="section">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Basic Plan</div><div class="stat-value" id="sub-basic">0</div><div class="stat-sub">businesses</div></div>
+        <div class="stat-card"><div class="stat-label">Pro Plan</div><div class="stat-value" style="color:var(--green)" id="sub-pro">0</div><div class="stat-sub">businesses</div></div>
+        <div class="stat-card"><div class="stat-label">Enterprise</div><div class="stat-value" style="color:var(--amber)" id="sub-enterprise">0</div><div class="stat-sub">businesses</div></div>
+        <div class="stat-card"><div class="stat-label">Monthly Revenue</div><div class="stat-value" style="color:var(--green)" id="sub-revenue">N0</div><div class="stat-sub">estimated</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Subscription Management</span>
+          <button class="btn btn-export" onclick="exportTable('sub-table','subscriptions')">Export CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Business</th><th>Plan</th><th>Status</th><th>Monthly Fee</th><th>Next Billing</th><th>Actions</th></tr></thead>
+            <tbody id="sub-table"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No subscriptions yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="section">
+      <div class="config-note">Configure global settings for all DebtTrack deployments.</div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Global Settings</span></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:14px"><label>n8n Base URL</label><input type="text" id="sa-webhook" placeholder="https://your-n8n.hstgr.cloud/webhook" /></div>
+          <div class="form-group" style="margin-bottom:14px"><label>WhatsApp Phone Number ID</label><input type="text" id="sa-wa-phone" placeholder="WhatsApp Phone Number ID" /></div>
+          <div class="form-group" style="margin-bottom:14px"><label>WhatsApp API Token</label><input type="password" id="sa-wa-token" placeholder="Bearer token..." /></div>
+          <div class="form-group" style="margin-bottom:14px"><label>Admin Password</label><input type="password" id="sa-password" placeholder="Change password..." /></div>
+          <div style="margin-top:14px"><button class="btn btn-primary" onclick="saveAdminSettings()">Save Settings</button></div>
+          <div class="alert alert-success" id="sa-saved" style="margin-top:12px">Settings saved.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Plan Pricing</span></div>
+        <div class="card-body">
+          <table style="font-size:13px">
+            <tr><td style="padding:10px 0;color:var(--text2);width:140px">Basic Plan</td><td><input type="number" id="price-basic" value="5000" style="width:120px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:inherit" /></td><td style="padding:10px 0 10px 10px;color:var(--text2)">N / month</td></tr>
+            <tr><td style="padding:10px 0;color:var(--text2)">Pro Plan</td><td><input type="number" id="price-pro" value="15000" style="width:120px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:inherit" /></td><td style="padding:10px 0 10px 10px;color:var(--text2)">N / month</td></tr>
+            <tr><td style="padding:10px 0;color:var(--text2)">Enterprise</td><td><input type="number" id="price-enterprise" value="50000" style="width:120px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:inherit" /></td><td style="padding:10px 0 10px 10px;color:var(--text2)">N / month</td></tr>
+          </table>
+          <div style="margin-top:14px"><button class="btn btn-ghost" onclick="savePricing()">Save Pricing</button></div>
+          <div class="alert alert-success" id="pricing-saved" style="margin-top:12px">Pricing updated.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT BUSINESS MODAL -->
+<div class="modal-overlay" id="edit-biz-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Business</span><button class="modal-close" onclick="closeModal('edit-biz-modal')">x</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-biz-id" />
+      <div class="form-group" style="margin-bottom:12px"><label>Business Name</label><input type="text" id="edit-biz-name" /></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Owner Name</label><input type="text" id="edit-biz-owner" /></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Plan</label><select id="edit-biz-plan"><option value="Basic">Basic</option><option value="Pro">Pro</option><option value="Enterprise">Enterprise</option></select></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Status</label><select id="edit-biz-status"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Trial">Trial</option></select></div>
+      <div class="form-group"><label>Dashboard URL</label><input type="text" id="edit-biz-url" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-biz-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="updateBusiness()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS DIALOG -->
+<div class="dialog-overlay" id="success-dialog">
+  <div class="dialog-box">
+    <div class="dialog-icon">✓</div>
+    <div class="dialog-title" id="dialog-title">Success</div>
+    <div class="dialog-msg" id="dialog-msg"></div>
+    <button class="dialog-ok" onclick="closeDialog()">OK</button>
+  </div>
+</div>
+
+<script>
+let PASS = 'bytetek2026';
+let businesses = [];
+let allDebts = [];
+let bizFilter = '';
+let statusFilter = '';
+let settings = { webhookUrl: '', waPhone: '', waToken: '' };
+let pricing = { Basic: 5000, Pro: 15000, Enterprise: 50000 };
+
+function loadSettings() {
+  const s = localStorage.getItem('sa_settings');
+  if (s) settings = { ...settings, ...JSON.parse(s) };
+  const b = localStorage.getItem('sa_businesses');
+  if (b) businesses = JSON.parse(b);
+  const d = localStorage.getItem('sa_debts');
+  if (d) allDebts = JSON.parse(d);
+  const p = localStorage.getItem('sa_pricing');
+  if (p) pricing = { ...pricing, ...JSON.parse(p) };
+
+  if (document.getElementById('sa-webhook')) {
+    document.getElementById('sa-webhook').value = settings.webhookUrl || '';
+    document.getElementById('sa-wa-phone').value = settings.waPhone || '';
+    document.getElementById('price-basic').value = pricing.Basic;
+    document.getElementById('price-pro').value = pricing.Pro;
+    document.getElementById('price-enterprise').value = pricing.Enterprise;
+  }
+}
+
+function saveData() {
+  localStorage.setItem('sa_businesses', JSON.stringify(businesses));
+  localStorage.setItem('sa_debts', JSON.stringify(allDebts));
+}
+
+function saveAdminSettings() {
+  settings.webhookUrl = document.getElementById('sa-webhook').value.trim();
+  settings.waPhone = document.getElementById('sa-wa-phone').value.trim();
+  settings.waToken = document.getElementById('sa-wa-token').value.trim();
+  const np = document.getElementById('sa-password').value;
+  if (np && np.length >= 6) PASS = np;
+  localStorage.setItem('sa_settings', JSON.stringify(settings));
+  showAlert('sa-saved');
+}
+
+function savePricing() {
+  pricing.Basic = Number(document.getElementById('price-basic').value);
+  pricing.Pro = Number(document.getElementById('price-pro').value);
+  pricing.Enterprise = Number(document.getElementById('price-enterprise').value);
+  localStorage.setItem('sa_pricing', JSON.stringify(pricing));
+  showAlert('pricing-saved');
+  renderSubscriptions();
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  if (u === 'superadmin' && p === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadSettings();
+    renderAll();
+  } else {
+    const err = document.getElementById('login-error');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'subscriptions') renderSubscriptions();
+  if (id === 'all-debts') renderAllDebts();
+}
+
+function fmt(n) { return 'N' + Number(n).toLocaleString('en-NG'); }
+
+function planBadge(plan) {
+  const map = { Basic: 'plan-basic', Pro: 'plan-pro', Enterprise: 'plan-enterprise' };
+  return `<span class="${map[plan] || 'plan-basic'}">${plan}</span>`;
+}
+
+function statusBadge(s) {
+  const map = { Active: 'badge-active', Inactive: 'badge-inactive', Trial: 'badge-trial' };
+  return `<span class="badge ${map[s] || 'badge-active'}">${s}</span>`;
+}
+
+function renderAll() {
+  renderOverview();
+  renderBusinesses();
+  renderAllDebts();
+  renderSubscriptions();
+  populateBizFilter();
+}
+
+function renderOverview() {
+  const active = businesses.filter(b => b.status === 'Active').length;
+  document.getElementById('stat-biz').textContent = businesses.length;
+  document.getElementById('stat-biz-sub').textContent = active + ' active';
+  const vol = allDebts.reduce((s, d) => s + Number(d.amount), 0);
+  document.getElementById('stat-volume').textContent = fmt(vol);
+  const debtors = [...new Set(allDebts.map(d => d.customer))].length;
+  document.getElementById('stat-debtors').textContent = debtors;
+  document.getElementById('stat-reminders').textContent = Math.floor(Math.random() * 50) + allDebts.length * 3;
+
+  document.getElementById('overview-biz-table').innerHTML = businesses.length ? businesses.map(b => {
+    const bDebts = allDebts.filter(d => d.bizId === b.id);
+    const total = bDebts.reduce((s, d) => s + Number(d.amount), 0);
+    return `<tr>
+      <td><strong>${b.name}</strong></td>
+      <td>${b.owner}</td>
+      <td style="font-size:12px">${b.phone}</td>
+      <td>${planBadge(b.plan)}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td>${bDebts.length}</td>
+      <td style="font-family:'DM Mono',monospace">${fmt(total)}</td>
+      <td style="font-size:12px;color:var(--text2)">${b.joined}</td>
+      <td>
+        <button class="icon-btn" onclick="openEditBiz('${b.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteBiz('${b.id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No businesses yet.</td></tr>`;
+
+  document.getElementById('activity-table').innerHTML = businesses.length ? businesses.slice(-5).reverse().map(b =>
+    `<tr><td>${b.name}</td><td>Onboarded</td><td>${b.plan} plan</td><td>${b.joined}</td></tr>`
+  ).join('') : `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">No activity yet.</td></tr>`;
+}
+
+function renderBusinesses(filter = '') {
+  const data = filter ? businesses.filter(b => b.name.toLowerCase().includes(filter.toLowerCase()) || b.owner.toLowerCase().includes(filter.toLowerCase())) : businesses;
+  document.getElementById('biz-table').innerHTML = data.length ? data.map(b => `<tr>
+    <td><strong>${b.name}</strong></td>
+    <td>${b.owner}</td>
+    <td style="font-size:12px">${b.phone}</td>
+    <td style="font-size:12px">${b.email}</td>
+    <td>${planBadge(b.plan)}</td>
+    <td>${statusBadge(b.status)}</td>
+    <td style="font-size:12px;color:var(--blue)">${b.dashUrl || '-'}</td>
+    <td>
+      <button class="icon-btn" onclick="openEditBiz('${b.id}')">Edit</button>
+      <button class="icon-btn danger" onclick="deleteBiz('${b.id}')">Delete</button>
+    </td>
+  </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No businesses found.</td></tr>`;
+}
+
+function filterBiz(val) { renderBusinesses(val); }
+
+function renderAllDebts() {
+  let data = [...allDebts];
+  if (bizFilter) data = data.filter(d => d.bizId === bizFilter);
+  if (statusFilter) data = data.filter(d => d.status === statusFilter);
+
+  document.getElementById('all-debts-table').innerHTML = data.length ? data.map(d => {
+    const biz = businesses.find(b => b.id === d.bizId);
+    const map = { Pending: 'badge-pending', Overdue: 'badge-overdue', Paid: 'badge-paid', Partial: 'badge-partial' };
+    return `<tr>
+      <td>${biz ? biz.name : 'Unknown'}</td>
+      <td>${d.customer}</td>
+      <td style="font-size:12px">${d.phone}</td>
+      <td style="font-family:'DM Mono',monospace">${fmt(d.amount)}</td>
+      <td>${d.due}</td>
+      <td><span class="badge ${map[d.status]||'badge-pending'}">${d.status}</span></td>
+      <td style="color:var(--text2)">${d.notes || '-'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No debt records found.</td></tr>`;
+}
+
+function filterAllDebts(type, val) {
+  if (type === 'biz') bizFilter = val;
+  if (type === 'status') statusFilter = val;
+  renderAllDebts();
+}
+
+function populateBizFilter() {
+  const sel = document.getElementById('biz-filter');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Businesses</option>' + businesses.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+}
+
+function renderSubscriptions() {
+  const basic = businesses.filter(b => b.plan === 'Basic').length;
+  const pro = businesses.filter(b => b.plan === 'Pro').length;
+  const ent = businesses.filter(b => b.plan === 'Enterprise').length;
+  const revenue = basic * pricing.Basic + pro * pricing.Pro + ent * pricing.Enterprise;
+  document.getElementById('sub-basic').textContent = basic;
+  document.getElementById('sub-pro').textContent = pro;
+  document.getElementById('sub-enterprise').textContent = ent;
+  document.getElementById('sub-revenue').textContent = fmt(revenue);
+
+  document.getElementById('sub-table').innerHTML = businesses.length ? businesses.map(b => {
+    const fee = pricing[b.plan] || 0;
+    const next = new Date(); next.setMonth(next.getMonth() + 1);
+    return `<tr>
+      <td>${b.name}</td>
+      <td>${planBadge(b.plan)}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td style="font-family:'DM Mono',monospace">${fmt(fee)}</td>
+      <td style="color:var(--text2)">${next.toISOString().split('T')[0]}</td>
+      <td>
+        <button class="icon-btn" onclick="openEditBiz('${b.id}')">Edit Plan</button>
+        <button class="icon-btn danger" onclick="toggleBizStatus('${b.id}')">${b.status === 'Active' ? 'Deactivate' : 'Activate'}</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No businesses yet.</td></tr>`;
+}
+
+function onboardBusiness() {
+  const nameEl = document.getElementById('ob-name');
+  const ownerEl = document.getElementById('ob-owner');
+  const phoneEl = document.getElementById('ob-phone');
+  const emailEl = document.getElementById('ob-email');
+  const userEl = document.getElementById('ob-username');
+  const passEl = document.getElementById('ob-password');
+
+  let valid = true;
+  [nameEl, ownerEl, phoneEl, emailEl, userEl, passEl].forEach(el => {
+    el.classList.remove('input-error');
+    const err = el.parentElement.querySelector('.field-error');
+    if (err) err.classList.remove('show');
+  });
+
+  function setErr(el, msg) {
+    el.classList.add('input-error');
+    let err = el.parentElement.querySelector('.field-error');
+    if (!err) { err = document.createElement('span'); err.className = 'field-error'; el.parentElement.appendChild(err); }
+    err.textContent = msg; err.classList.add('show'); valid = false;
+  }
+
+  if (!nameEl.value.trim()) setErr(nameEl, 'Business name is required');
+  if (!ownerEl.value.trim()) setErr(ownerEl, 'Owner name is required');
+  if (!phoneEl.value.trim()) setErr(phoneEl, 'Phone number is required');
+  if (!emailEl.value.trim() || !emailEl.value.includes('@')) setErr(emailEl, 'Valid email is required');
+  if (!userEl.value.trim()) setErr(userEl, 'Username is required');
+  if (!passEl.value || passEl.value.length < 6) setErr(passEl, 'Password must be at least 6 characters');
+  if (!valid) return;
+
+  const btn = document.getElementById('ob-btn');
+  btn.innerHTML = '<span class="spinner"></span> Onboarding...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const biz = {
+      id: 'biz_' + Date.now(),
+      name: nameEl.value.trim(),
+      owner: ownerEl.value.trim(),
+      phone: phoneEl.value.trim(),
+      email: emailEl.value.trim(),
+      category: document.getElementById('ob-category').value,
+      plan: document.getElementById('ob-plan').value,
+      username: userEl.value.trim(),
+      dashUrl: document.getElementById('ob-url').value.trim(),
+      status: 'Active',
+      joined: new Date().toISOString().split('T')[0]
+    };
+    businesses.push(biz);
+    saveData();
+    renderAll();
+    clearOnboard();
+    btn.innerHTML = 'Onboard Business';
+    btn.disabled = false;
+    showDialog('Business Onboarded', biz.name + ' has been successfully onboarded.');
+  }, 1000);
+}
+
+function clearOnboard() {
+  ['ob-name','ob-owner','ob-phone','ob-email','ob-username','ob-password','ob-url'].forEach(id => document.getElementById(id).value = '');
+}
+
+function openEditBiz(id) {
+  const b = businesses.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('edit-biz-id').value = id;
+  document.getElementById('edit-biz-name').value = b.name;
+  document.getElementById('edit-biz-owner').value = b.owner;
+  document.getElementById('edit-biz-plan').value = b.plan;
+  document.getElementById('edit-biz-status').value = b.status;
+  document.getElementById('edit-biz-url').value = b.dashUrl || '';
+  openModal('edit-biz-modal');
+}
+
+function updateBusiness() {
+  const id = document.getElementById('edit-biz-id').value;
+  const idx = businesses.findIndex(b => b.id === id);
+  if (idx !== -1) {
+    businesses[idx].name = document.getElementById('edit-biz-name').value;
+    businesses[idx].owner = document.getElementById('edit-biz-owner').value;
+    businesses[idx].plan = document.getElementById('edit-biz-plan').value;
+    businesses[idx].status = document.getElementById('edit-biz-status').value;
+    businesses[idx].dashUrl = document.getElementById('edit-biz-url').value;
+  }
+  saveData();
+  renderAll();
+  closeModal('edit-biz-modal');
+  showDialog('Business Updated', 'Business record updated successfully.');
+  setTimeout(() => closeDialog(), 1500);
+}
+
+function deleteBiz(id) {
+  if (!confirm('Delete this business and all its data?')) return;
+  businesses = businesses.filter(b => b.id !== id);
+  allDebts = allDebts.filter(d => d.bizId !== id);
+  saveData();
+  renderAll();
+}
+
+function toggleBizStatus(id) {
+  const idx = businesses.findIndex(b => b.id === id);
+  if (idx !== -1) businesses[idx].status = businesses[idx].status === 'Active' ? 'Inactive' : 'Active';
+  saveData();
+  renderAll();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showAlert(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function showDialog(title, msg) {
+  document.getElementById('dialog-title').textContent = title;
+  document.getElementById('dialog-msg').textContent = msg;
+  document.getElementById('success-dialog').classList.add('open');
+}
+
+function closeDialog() { document.getElementById('success-dialog').classList.remove('open'); }
+
+function exportTable(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const rows = table.querySelectorAll('tr');
+  const csv = [];
+  const skip = ['Edit','Delete','Edit Plan','Deactivate','Activate'];
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('th,td');
+    const data = [];
+    cols.forEach(col => {
+      const text = col.innerText.replace(/,/g,';').replace(/\n/g,' ').trim();
+      if (!skip.includes(text)) data.push('"' + text + '"');
+    });
+    if (data.length > 0) csv.push(data.join(','));
+  });
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename + '-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+loadSettings();
+</script>
+</body>
+</html>
